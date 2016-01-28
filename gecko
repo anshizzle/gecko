@@ -5,17 +5,22 @@ require "open-uri"
 require "thread"
 require "json"
 
-board = ARGV[0]
-thread = ARGV[1]
+board    = ARGV[0]
+thread   = ARGV[1]
+dir_name = ARGV[2]
 
 if board.nil? || thread.nil?
-  puts "MISSING BOARD AND/OR THREAD"
-  puts "usage: gecko [board] [thread_no]"
+  puts "MISSING BOARD AND/OR THREAD, directory is optional"
+  puts "usage: gecko [board] [thread_no] ([directory])"
   exit
 end
 
+dir_name ||= "~/Documents/pics"
+unless File.directory?(dir_name)
+  system("mkdir #{dir_name}")
+end
 
-dir_name = "~/Documents/pics/#{thread}_images"
+dir_name += ("/#{thread}_images")
 dir_name = File.expand_path(dir_name)
 system("mkdir #{dir_name}")
 
@@ -28,13 +33,13 @@ parsed = JSON.parse(unparsed_response)
 
 image_count = 0
 
-work_q = Queue.new 
+work_q = Queue.new
 
 parsed["posts"].each { |p| work_q.push p }
 
-workers = (0..4).map do 
+workers = (0..4).map do
   Thread.new do
-    begin 
+    begin
       while post = work_q.pop(true)
         next unless post["filename"]
         img_url = "http://i.4cdn.org/#{board}/#{post["tim"]}#{post["ext"]}"
