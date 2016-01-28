@@ -15,7 +15,3 @@ Set up:
 - Create directory if it does not exist in: `mkdir ~/Documents/pics/`
 - browse 4chan (risky step - be careful)
 - run gecko: `gecko [board] [thread_number]`
-
-
-To-Do:
-- specify directory from cli
