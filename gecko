@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+require "uri"
+require "open-uri"
+require "thread"
+require "json"
+
+board = ARGV[0]
+thread = ARGV[1]
+
+if board.nil? || thread.nil?
+  puts "MISSING BOARD AND/OR THREAD"
+  puts "usage: gecko [board] [thread_no]"
+  exit
+end
+
+
+dir_name = "~/Documents/pics/#{thread}_images"
+dir_name = File.expand_path(dir_name)
+system("mkdir #{dir_name}")
+
+url = "http://a.4cdn.org/#{board}/thread/#{thread}.json"
+uri = URI.parse(url)
+puts uri
+
+unparsed_response = open(uri).read
+parsed = JSON.parse(unparsed_response)
+
+image_count = 0
+
+work_q = Queue.new 
+
+parsed["posts"].each { |p| work_q.push p }
+
+workers = (0..4).map do 
+  Thread.new do
+    begin 
+      while post = work_q.pop(true)
+        next unless post["filename"]
+        img_url = "http://i.4cdn.org/#{board}/#{post["tim"]}#{post["ext"]}"
+        puts "GETTING IMAGE: #{img_url}"
+        File.open("#{dir_name}/#{post["filename"]}#{post["ext"]}", "wb") do |f|
+          f.write open(URI.parse(img_url)).read
+        end
+        image_count += 1
+        puts "FINISHED GETTING IMAGE #{img_url}"
+      end
+    rescue ThreadError
+    end
+  end
+end; "ok"
+
+workers.map(&:join); "ok"
+
+puts "Finished pulling #{image_count.to_s} images, put them in directory #{dir_name}"
